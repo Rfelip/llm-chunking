@@ -17,7 +17,7 @@ from gzip import decompress, compress
 def extract_info_from_website(url):
     download    = fetch_url(url)
     html_info   = extract(download, output_format="html",include_links=True, include_comments=False, include_tables=False, no_fallback=True)
-    text_info   = extract(download, output_format="markdown", include_comments=False, include_tables=False, no_fallback=True)
+    text_info   = extract(download, include_comments=False, include_tables=True, no_fallback=True)
     return html_info, text_info
 
 class LinkNode:
