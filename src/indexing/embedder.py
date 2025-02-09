@@ -27,13 +27,13 @@ class EmbeddingManager:
             self.model.save(model_path)
         return self.model
 
-    async def generate_embeddings(self, chunks):
+    def generate_embeddings(self, chunks):
         """Convert text chunks to embeddings"""
         if not self.model:
             self.load_or_download_model()
             
         print("Generating embeddings...")
-        return await self.model.aembed_documents(chunks)
+        return self.model.embed_documents(chunks)
 
     def normalize_embeddings(self, embeddings):
         """Normalize embeddings to unit length"""
@@ -47,11 +47,9 @@ class EmbeddingManager:
         
         # Normalize embeddings
         embeddings = self.normalize_embeddings(embeddings)
-        
         # Create FAISS index
         dimension = embeddings.shape[1]
-        M         = 32
-        self.index = faiss.IndexHNSWFlat(dimension)
+        self.index = faiss.IndexFlatL2(dimension)
         self.index.add(embeddings)
         print(f"Created FAISS index with {self.index.ntotal} vectors")
         return self.index
@@ -75,7 +73,7 @@ class EmbeddingManager:
         print(f"Loaded index with {self.index.ntotal} vectors")
         return self.index
 
-    async def __call__(self, chunks=None, index_name):
+    def __call__(self, chunks=None, index_name = "index"):
         """Check for existing index, load if exists; else create from chunks and save."""
         index_path = os.path.join(self.index_dir, f"{index_name}.index")
         if os.path.exists(index_path):
@@ -85,7 +83,7 @@ class EmbeddingManager:
                 raise ValueError("Chunks must be provided to create a new index.")
             
             text_chunks = [doc.page_content for doc in chunks]
-            embeddings = await self.generate_embeddings(text_chunks)
+            embeddings = self.generate_embeddings(text_chunks)
             self.create_faiss_index(embeddings)
             self.save_faiss_index(index_name)
         return self.index
