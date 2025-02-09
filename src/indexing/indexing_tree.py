@@ -154,4 +154,6 @@ async def save_data(url, data):
 async def build_index_from_url(url, depth = 1):
     index_tree = LinkTree(url, max_depth = depth)
     await index_tree.build_tree()
-    return index_tree
+    sanitized_url = sanitize_url(url)
+    folder_path = Path('data') / "websites" / sanitized_url 
+    return index_tree, folder_path
