@@ -38,9 +38,6 @@ class EmbeddingManager:
         """Create and save FAISS index"""
         # Convert embeddings to float32 numpy array
         embeddings = np.array(embeddings).astype('float32')
-        
-        # Normalize embeddings
-        embeddings = self.normalize_embeddings(embeddings)
         # Create FAISS index
         dimension = embeddings.shape[1]
         self.index = faiss.IndexFlatL2(dimension)
