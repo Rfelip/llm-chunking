@@ -16,9 +16,13 @@ async def handle_message(update: Update, context):
     try:
         if text.startswith("/process_url"):
             url = text[len("/process_url"):].strip()
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout = 240) as client:
                 await update.message.reply_text("Indexing website...")
-                await client.post(f"{API_URL}/process_url", json={"url": url})
+                # Send as JSON body with "url" key
+                response = await client.post(
+                    f"{API_URL}/process_url",
+                    json={"url": url}  # Wrap in JSON object
+                )
             await update.message.reply_text("Indexing finished! Now ask questions")
             context.user_data["current_url"] = url
         else:
@@ -27,14 +31,18 @@ async def handle_message(update: Update, context):
                 await update.message.reply_text("Please send a URL first!")
                 return
                 
-            async with httpx.AsyncClient() as client:
-                await update.message.reply_text("Starting to process query!")
+            async with httpx.AsyncClient(timeout = 300) as client:
+                await update.message.reply_text("Processing query...")
+                # Send all parameters in JSON body
                 response = await client.post(
                     f"{API_URL}/ask",
-                    json={"url": url, "query": text, "user_id": str(user_id)}
+                    json={
+                        "url": url,
+                        "query": text,
+                        "user_id": str(user_id)
+                    }
                 )
                 await update.message.reply_text(response.json()["response"])
-                
     except Exception as e:
         await update.message.reply_text(f"Error: {str(e)}")
 
