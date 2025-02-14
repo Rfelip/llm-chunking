@@ -47,7 +47,7 @@ class ConversationManager:
         await self.save_conversation()
 
 class AsyncModelManager:
-    def __init__(self, model_name: str = "mistral-7b-instruct-v0.1.Q4_K_M.gguf"):
+    def __init__(self, model_name: str = "mistral/mistral-7b-instruct-v0.1.Q4_K_M.gguf"):
         self.model_name = model_name
         self.model_path = Path("data") / "models" / model_name
         self.llm = None
@@ -88,14 +88,25 @@ async def generate_response(
 ) -> str:
     """Generate response using context from IndexingManager"""
     # Get context from IndexingManager
-    _, context_chunks = await conv_manager.index_manager.embedding_manager.search_index([query], 5)
+    loop = asyncio.get_event_loop()
+    
+    # Run synchronous FAISS search in executor
+    search_results = await loop.run_in_executor(
+        None,
+        conv_manager.index_manager.embedding_manager.search_index,
+        [query],
+        5
+    )
+    
+    # Unpack results
+    similarities, context_chunks = search_results
     
     # Build prompt using IndexingManager's logic
     prompt = conv_manager.index_manager.build_starting_prompt(context_chunks[0], query)
     
     # Add conversation history
     history_str = "\n".join(
-        [f"User: {q}\nAssistant: {a}" for q, a in conv_manager.history]  # Keep last 3 interactions
+        [f"User: {q}\nAssistant: {a}" for q, a in conv_manager.history[-3:]]
     )
     
     full_prompt = f"""<s>[INST] <<SYS>>
@@ -106,9 +117,8 @@ async def generate_response(
     {history_str}
 
     Please provide a comprehensive answer. [/INST]"""
-    
+    print("Generating answer to your question...")
     # Run model inference in executor
-    loop = asyncio.get_event_loop()
     response = await loop.run_in_executor(
         None,
         lambda: model.create_chat_completion(

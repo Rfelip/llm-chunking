@@ -12,6 +12,7 @@ dependencies = [
     "langchain>=0.3.18",
     "langchain-huggingface>=0.1.2",
     "numpy>=2.2.2",
+    "scikit-learn>=1.6.1",
     "sentence-transformers>=3.4.1",
     "trafilatura>=2.0.0",
 ]

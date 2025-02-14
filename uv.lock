@@ -758,6 +758,7 @@ dependencies = [
     { name = "langchain" },
     { name = "langchain-huggingface" },
     { name = "numpy" },
+    { name = "scikit-learn" },
     { name = "sentence-transformers" },
     { name = "trafilatura" },
 ]
@@ -771,6 +772,7 @@ requires-dist = [
     { name = "langchain", specifier = ">=0.3.18" },
     { name = "langchain-huggingface", specifier = ">=0.1.2" },
     { name = "numpy", specifier = ">=2.2.2" },
+    { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "sentence-transformers", specifier = ">=3.4.1" },
     { name = "trafilatura", specifier = ">=2.0.0" },
 ]
