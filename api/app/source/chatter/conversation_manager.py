@@ -56,16 +56,16 @@ class AsyncModelManager:
         """Load model with async wrapper"""
         loop = asyncio.get_event_loop()
         if not self.llm:
-            if not await self._model_exists():
-                await self._download_model()
-            
             self.llm = await loop.run_in_executor(
                 None, 
                 lambda: Llama(
                     model_path=str(self.model_path),
                     n_ctx=2048,
-                    n_threads=8,
-                    verbose=False
+                    n_threads=12,
+                    verbose=False,
+                    use_mlock=True,
+                    use_mmap=True,
+                    seed = 42
                 )
             )
         return self.llm
@@ -74,17 +74,18 @@ class AsyncModelManager:
         """Check if model exists asynchronously"""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.model_path.exists)
-
-    async def _download_model(self):
-        """Download model implementation (similar to original but async)"""
-        # Implementation would use aiohttp instead of requests
-        # Omitted for brevity, would maintain original functionality
+    
+    async def close(self):
+        """Cleanup resources"""
+        if hasattr(self, 'index_manager'):
+            await self.index_manager.close()
 
 async def generate_response(
     model: Llama,
     conv_manager: ConversationManager,
     query: str,
-    temperature: float = 0.2
+    temperature: float = 0.2,
+    use_history = True
 ) -> str:
     """Generate response using context from IndexingManager"""
     # Get context from IndexingManager
@@ -99,24 +100,28 @@ async def generate_response(
     )
     
     # Unpack results
-    similarities, context_chunks = search_results
+    _, context_chunks = search_results
     
     # Build prompt using IndexingManager's logic
     prompt = conv_manager.index_manager.build_starting_prompt(context_chunks[0], query)
     
     # Add conversation history
-    history_str = "\n".join(
-        [f"User: {q}\nAssistant: {a}" for q, a in conv_manager.history[-3:]]
-    )
-    
+    if use_history:
+        
+        history_str = "\n".join(
+            [f"User: {q}\nAssistant: {a}" for q, a in conv_manager.history[-3:]]
+        )
+    else:
+        history_str = ""
+
     full_prompt = f"""<s>[INST] <<SYS>>
-    {prompt}
-    <</SYS>>
+        {prompt}
+        <</SYS>>
 
-    Previous conversation:
-    {history_str}
+        Previous conversation:
+        {history_str}
 
-    Please provide a comprehensive answer. [/INST]"""
+        Please provide a comprehensive answer. [/INST]"""
     print("Generating answer to your question...")
     # Run model inference in executor
     response = await loop.run_in_executor(
@@ -129,3 +134,5 @@ async def generate_response(
     )
     
     return response['choices'][0]['message']['content']
+
+    

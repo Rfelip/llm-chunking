@@ -61,3 +61,8 @@ class IndexingManager:
             None, self.embedding_manager.search_index, [query], 5
         )
         return self.build_starting_prompt(results[0], query)
+    
+    async def close(self):
+        """Cleanup resources"""
+        if hasattr(self, 'embedding_manager'):
+            self.embedding_manager.close()

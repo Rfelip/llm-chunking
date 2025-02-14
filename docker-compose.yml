@@ -1,0 +1,20 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - UVICORN_WORKERS=2
+      - PYTHONUNBUFFERED=1
+
+  bot:
+    build: ./bot
+    depends_on:
+      - api
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - API_URL=http://api:8000
+    volumes:
+      - ./data:/app/data
