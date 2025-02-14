@@ -10,8 +10,8 @@ active_indexes = {}
 @app.post("/process_url")
 async def process_url(url: str):
     manager = IndexingManager(url)
-    index = await manager()
-    active_indexes[url] = index
+    await manager()  # Initialize the manager by running the pipeline
+    active_indexes[url] = manager  # Store the manager instance
     return {"status": "index_created"}
 
 @app.post("/ask")
@@ -21,22 +21,17 @@ async def ask_question(url: str, query: str, user_id: str):
 
     manager = active_indexes[url]
     conv_manager = ConversationManager(url, user_id)
-    
-    # Perform search
-    similarities, results = manager.embedding_manager.search_index([query], 3)
-    
-    
+    conv_manager.index_manager = manager  # Link the IndexingManager
     await conv_manager.initialize()
 
     # Initialize Model
     model_mgr = AsyncModelManager()
     model = await model_mgr.load_model()
 
-    # Example interaction
+    # Generate response
     response = await generate_response(model, conv_manager, query)
     
-    await conv_manager.add_interaction(query, response)
-    # Save conversation
-    await conv_manager.save_conversation(query, response)
+    # Save interaction
+    await conv_manager.add_interaction(query, response)  # This saves automatically
     
     return {"response": response}
